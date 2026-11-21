@@ -33,7 +33,7 @@ Displays real-time focus sessions, cycle progress dots, and delivers desktop not
 │ FOCUS MODE                                   │
 │ [ 25/5 Classic ] [ 50/10 Deep ] [ 15/3 Fast] │
 ├──────────────────────────────────────────────┤
-│ 🔔 Audio Chime Alerts            [ Enabled ] │
+│ 🔔 Audio Chime Alerts  [ ▶ Test ] [ Enabled] │
 ├──────────────────────────────────────────────┤
 │ [ 󰏤 Pause ]      [ 󰒭 Skip ]      [ 󰦛 Reset ] │
 ├──────────────────────────────────────────────┤
