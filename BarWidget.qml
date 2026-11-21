@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -100,11 +101,6 @@ BarWidget {
     root.weekCompleted = data.week_completed || 0
     root.weekFocusStr = data.week_focus_str || "0m"
     root.tooltipText = data.tooltip || ""
-
-    // Trigger onboarding popup if it has never been completed
-    if (data.onboarding_done === false && !root.onboardingDismissed && !root.cardOpen && !!root.bar) {
-      root.cardOpen = true
-    }
 
     if (pomodoroMouseArea.containsMouse && root.bar) {
       root.bar.showTooltip(root, root.tooltipText)
@@ -351,7 +347,7 @@ BarWidget {
         bar: root.bar
         owner: root
         open: root.cardOpen
-        margin: Style.space(24)
+        margin: Style.gapsOut
         onOpenChanged: {
           if (!open) {
             root.cardOpen = false
@@ -506,7 +502,7 @@ BarWidget {
           // 3. Sound Settings Toggle Row
           Rectangle {
             width: parent.width
-            height: Style.space(36)
+            height: Style.space(38)
             radius: Style.space(6)
             color: Util.alpha(root.barForeground, 0.06)
 
@@ -529,31 +525,63 @@ BarWidget {
               }
             }
 
-            Rectangle {
+            Row {
               anchors.right: parent.right
               anchors.rightMargin: Style.space(8)
               anchors.verticalCenter: parent.verticalCenter
-              width: Style.space(70)
-              height: Style.space(24)
-              radius: Style.space(12)
-              color: root.soundEnabled ? Util.alpha(root.accentColor, 0.25) : Util.alpha(root.barForeground, 0.12)
-              border.width: 1
-              border.color: root.soundEnabled ? root.accentColor : Util.alpha(root.barForeground, 0.2)
+              spacing: Style.space(6)
 
-              Text {
-                anchors.centerIn: parent
-                text: root.soundEnabled ? "Enabled" : "Muted"
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption - 2
-                font.bold: true
-                color: root.soundEnabled ? root.accentColor : root.barForeground
-                opacity: root.soundEnabled ? 1.0 : 0.6
+              // Test Sound Button (plays sample chime when enabled)
+              Rectangle {
+                visible: root.soundEnabled
+                width: Style.space(48)
+                height: Style.space(24)
+                radius: Style.space(12)
+                color: testHover.containsMouse ? Util.alpha(root.barForeground, 0.15) : Util.alpha(root.barForeground, 0.08)
+                border.width: 1
+                border.color: Util.alpha(root.barForeground, 0.2)
+
+                Text {
+                  anchors.centerIn: parent
+                  text: "▶ Test"
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption - 2
+                  color: root.barForeground
+                }
+
+                MouseArea {
+                  id: testHover
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.runAction("test_sound")
+                }
               }
 
-              MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.runAction("toggle_sound")
+              // Sound Toggle Button
+              Rectangle {
+                width: Style.space(68)
+                height: Style.space(24)
+                radius: Style.space(12)
+                color: root.soundEnabled ? Util.alpha(root.accentColor, 0.25) : Util.alpha(root.barForeground, 0.12)
+                border.width: 1
+                border.color: root.soundEnabled ? root.accentColor : Util.alpha(root.barForeground, 0.2)
+
+                Text {
+                  anchors.centerIn: parent
+                  text: root.soundEnabled ? "Enabled" : "Muted"
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption - 2
+                  font.bold: true
+                  color: root.soundEnabled ? root.accentColor : root.barForeground
+                  opacity: root.soundEnabled ? 1.0 : 0.6
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.runAction("toggle_sound")
+                }
               }
             }
           }
@@ -654,10 +682,14 @@ BarWidget {
           }
 
           // 5. Productivity Stats Summary
-          Row {
+          Item {
             width: parent.width
+            height: Math.max(todayCol.implicitHeight, weekCol.implicitHeight)
 
             Column {
+              id: todayCol
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
               spacing: 2
               Text {
                 text: "TODAY"
@@ -676,10 +708,10 @@ BarWidget {
               }
             }
 
-            Item { Layout.fillWidth: true; width: Style.space(10) }
-
             Column {
+              id: weekCol
               anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
               spacing: 2
               Text {
                 anchors.right: parent.right

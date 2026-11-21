@@ -360,6 +360,8 @@ def main():
         handle_set_preset(state, preset_arg)
     elif action == "toggle_sound":
         handle_toggle_sound(state)
+    elif action == "test_sound":
+        play_chime(True)
     elif action == "onboarding_done":
         state["onboarding_done"] = True
         save_state(state)
