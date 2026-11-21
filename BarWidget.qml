@@ -313,10 +313,18 @@ BarWidget {
     active: root.onboardingOpen && !!root.bar
     sourceComponent: Component {
       PopupCard {
+        id: onboardingPopup
         anchorItem: root
         bar: root.bar
         owner: root
         open: root.onboardingOpen
+        onOpenChanged: {
+          if (!open) {
+            root.onboardingOpen = false
+            root.onboardingDismissed = true
+            root.runAction("onboarding_done")
+          }
+        }
         contentWidth: Style.space(330)
         contentHeight: cardCol.implicitHeight + Style.space(28)
 
