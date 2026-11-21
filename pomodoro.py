@@ -68,7 +68,8 @@ def get_default_state():
         "target_ts": None,
         "cycle": 0,
         "completed_today": 0,
-        "focus_sec_today": 0
+        "focus_sec_today": 0,
+        "onboarding_done": False
     }
 
 def load_state():
@@ -231,6 +232,12 @@ def get_status_payload(state):
         "Left: Start/Pause • Right: Skip • Middle: Reset"
     ]
 
+    # First time install notification (Option B)
+    if not state.get("onboarding_done", False) and not state.get("onboarding_notif_sent", False):
+        send_notification("Pomodoro Timer 󰄉", "Ready to focus! Left click to start, Right click to skip, Middle click to reset.")
+        state["onboarding_notif_sent"] = True
+        save_state(state)
+
     return {
         "phase": phase,
         "phase_label": phase_label,
@@ -243,6 +250,7 @@ def get_status_payload(state):
         "pct": pct,
         "completed_today": completed,
         "focus_time_str": focus_time_str,
+        "onboarding_done": state.get("onboarding_done", False),
         "tooltip": "\n".join(tooltip_lines)
     }
 
@@ -256,6 +264,9 @@ def main():
         handle_skip(state)
     elif action == "reset":
         handle_reset(state)
+    elif action == "onboarding_done":
+        state["onboarding_done"] = True
+        save_state(state)
 
     payload = get_status_payload(state)
     print(json.dumps(payload))

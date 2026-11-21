@@ -31,6 +31,10 @@ BarWidget {
   property int progressPct: 0
   property string tooltipText: "󰏤 Focus (25:00 left) [Paused]\n─────────────────────────────\nProgress: [░░░░░░░░░░░░] 0%\nToday:    0 completed (0m)\n─────────────────────────────\nLeft: Start/Pause • Right: Skip • Middle: Reset"
 
+  // Onboarding modal states
+  property bool onboardingOpen: false
+  property bool onboardingDismissed: false
+
   // Adaptive geometry that smoothly resizes for any font scale and vertical/horizontal bars
   implicitWidth: root.isVertical ? root.barSize : Math.max(Style.space(80), contentRow.implicitWidth + Style.space(16))
   implicitHeight: root.isVertical ? Math.max(Style.space(76), contentCol.implicitHeight + Style.space(12)) : root.barSize
@@ -80,6 +84,11 @@ BarWidget {
     root.progressPct = data.pct || 0
     root.tooltipText = data.tooltip || ""
 
+    // Trigger onboarding popup if it has never been completed
+    if (data.onboarding_done === false && !root.onboardingDismissed && !root.onboardingOpen && !!root.bar) {
+      root.onboardingOpen = true
+    }
+
     if (pomodoroMouseArea.containsMouse && root.bar) {
       root.bar.showTooltip(root, root.tooltipText)
     }
@@ -114,6 +123,9 @@ BarWidget {
         root.timeText = "25:00"
         root.iconText = "󰏤"
       }
+    } else if (act === "onboarding_done") {
+      root.onboardingOpen = false
+      root.onboardingDismissed = true
     }
 
     // Execute Python action immediately
@@ -291,6 +303,148 @@ BarWidget {
 
       onClicked: (mouse) => {
         root.triggerPress(mouse.button)
+      }
+    }
+  }
+
+  // OPTION A: Interactive Onboarding Popup Card
+  Loader {
+    id: onboardingLoader
+    active: root.onboardingOpen && !!root.bar
+    sourceComponent: Component {
+      PopupCard {
+        anchorItem: root
+        bar: root.bar
+        owner: root
+        open: root.onboardingOpen
+        contentWidth: Style.space(330)
+        contentHeight: cardCol.implicitHeight + Style.space(28)
+
+        Column {
+          id: cardCol
+          anchors.fill: parent
+          spacing: Style.space(12)
+
+          // 1. Header with icon and title
+          Row {
+            spacing: Style.space(10)
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Text {
+              text: "󰄉"
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.title + 6
+              color: root.accentColor
+            }
+
+            Column {
+              Text {
+                text: "Pomodoro Focus Timer"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.title
+                font.bold: true
+                color: root.barForeground
+              }
+              Text {
+                text: "Minimalist productivity widget"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                color: root.barForeground
+                opacity: 0.65
+              }
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: 1
+            color: root.barForeground
+            opacity: 0.12
+          }
+
+          // 2. Step-by-step mouse actions
+          Column {
+            width: parent.width
+            spacing: Style.space(8)
+
+            Row {
+              spacing: Style.space(10)
+              Text { text: "🖱️"; font.pixelSize: Style.font.caption + 2 }
+              Column {
+                Text { text: "Left Click — Start / Pause"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
+                Text { text: "Begins or pauses your 25-minute focus session"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
+              }
+            }
+
+            Row {
+              spacing: Style.space(10)
+              Text { text: "⏭️"; font.pixelSize: Style.font.caption + 2 }
+              Column {
+                Text { text: "Right Click — Skip Phase"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
+                Text { text: "Switches instantly between Focus ↔ Break (5m / 15m)"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
+              }
+            }
+
+            Row {
+              spacing: Style.space(10)
+              Text { text: "🔄"; font.pixelSize: Style.font.caption + 2 }
+              Column {
+                Text { text: "Middle Click — Reset"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
+                Text { text: "Resets the timer back to 25:00"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
+              }
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: 1
+            color: root.barForeground
+            opacity: 0.12
+          }
+
+          // 3. Audio & Bar hint
+          Text {
+            width: parent.width
+            text: "🔔 Plays a sound chime & sends desktop alerts when each session completes."
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption - 1
+            color: root.barForeground
+            opacity: 0.75
+            wrapMode: Text.WordWrap
+          }
+
+          // 4. Action Button: "Start Focusing 🚀"
+          Rectangle {
+            width: parent.width
+            height: Style.space(36)
+            radius: Style.space(6)
+            color: btnHover.containsMouse ? root.accentColor : Util.alpha(root.accentColor, 0.18)
+            border.width: 1
+            border.color: root.accentColor
+
+            Text {
+              anchors.centerIn: parent
+              text: "Start Focusing 🚀"
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption + 1
+              font.bold: true
+              color: btnHover.containsMouse ? (root.bar ? root.bar.themeContrastForeground : "#101315") : root.accentColor
+            }
+
+            MouseArea {
+              id: btnHover
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                root.onboardingOpen = false
+                root.onboardingDismissed = true
+                root.runAction("onboarding_done")
+                root.runAction("toggle")
+              }
+            }
+          }
+        }
       }
     }
   }
