@@ -318,6 +318,7 @@ BarWidget {
         bar: root.bar
         owner: root
         open: root.onboardingOpen
+        margin: Style.space(24)
         onOpenChanged: {
           if (!open) {
             root.onboardingOpen = false
@@ -333,32 +334,70 @@ BarWidget {
           anchors.fill: parent
           spacing: Style.space(12)
 
-          // 1. Header with icon and title
-          Row {
-            spacing: Style.space(10)
-            anchors.horizontalCenter: parent.horizontalCenter
+          // 1. Header with icon, title, and close button (✕)
+          Item {
+            width: parent.width
+            height: Math.max(headerRow.implicitHeight, closeBtn.height)
 
-            Text {
-              text: "󰄉"
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title + 6
-              color: root.accentColor
+            Row {
+              id: headerRow
+              spacing: Style.space(10)
+              anchors.left: parent.left
+              anchors.verticalCenter: parent.verticalCenter
+
+              Text {
+                text: "󰄉"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.title + 6
+                color: root.accentColor
+              }
+
+              Column {
+                Text {
+                  text: "Pomodoro Focus Timer"
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.title
+                  font.bold: true
+                  color: root.barForeground
+                }
+                Text {
+                  text: "Minimalist productivity widget"
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  color: root.barForeground
+                  opacity: 0.65
+                }
+              }
             }
 
-            Column {
+            Rectangle {
+              id: closeBtn
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              width: Style.space(26)
+              height: Style.space(26)
+              radius: Style.space(13)
+              color: closeHover.containsMouse ? Util.alpha(root.barForeground, 0.15) : "transparent"
+
               Text {
-                text: "Pomodoro Focus Timer"
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.title
-                font.bold: true
-                color: root.barForeground
-              }
-              Text {
-                text: "Minimalist productivity widget"
+                anchors.centerIn: parent
+                text: "✕"
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
                 color: root.barForeground
-                opacity: 0.65
+                opacity: closeHover.containsMouse ? 1.0 : 0.6
+              }
+
+              MouseArea {
+                id: closeHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  root.onboardingOpen = false
+                  root.onboardingDismissed = true
+                  root.runAction("onboarding_done")
+                }
               }
             }
           }
