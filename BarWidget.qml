@@ -12,9 +12,12 @@ BarWidget {
   property string fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
   property color barForeground: root.bar ? root.bar.barForeground : Commons.Color.foreground
   property color urgentColor: root.bar ? root.bar.urgent : Commons.Color.urgent
+  property color accentColor: Commons.Color.accent
 
-  readonly property int mainFontSize: Math.max(9, Style.font.caption)
-  readonly property int subFontSize: Math.max(8, Style.font.caption - 1)
+  readonly property bool isVertical: root.bar ? (root.bar.vertical === true) : false
+
+  readonly property int mainFontSize: Math.max(9, root.isVertical ? Style.font.caption - 1 : Style.font.caption)
+  readonly property int subFontSize: Math.max(7, Style.font.caption - 2)
 
   property bool pressable: true
   property bool interactive: true
@@ -25,10 +28,12 @@ BarWidget {
   property string timeText: "25:00"
   property string dotsText: "○○○○"
   property int progressPct: 0
+  property int secondsLeft: 1500
   property string tooltipText: "󰏤 Focus (25:00 left) [Paused]\n─────────────────────────────\nProgress: [░░░░░░░░░░░░] 0%\nToday:    0 completed (0m)\n─────────────────────────────\nLeft: Start/Pause • Right: Skip • Middle: Reset"
 
-  implicitWidth: Style.space(92)
-  implicitHeight: root.barSize
+  // Adaptive geometry that smoothly resizes for any font scale and vertical/horizontal bars
+  implicitWidth: root.isVertical ? root.barSize : Math.max(Style.space(80), contentRow.implicitWidth + Style.space(16))
+  implicitHeight: root.isVertical ? Math.max(Style.space(76), contentCol.implicitHeight + Style.space(12)) : root.barSize
 
   signal pressed(int button)
 
@@ -139,18 +144,33 @@ BarWidget {
     id: contentItem
     anchors.fill: parent
 
+    // Tactile hover feedback that matches any background wallpaper & bar theme
+    Rectangle {
+      anchors.fill: parent
+      anchors.margins: Style.space(2)
+      radius: Style.space(4)
+      color: root.barForeground
+      opacity: pomodoroMouseArea.containsMouse ? 0.08 : 0.0
+
+      Behavior on opacity {
+        NumberAnimation { duration: 150 }
+      }
+    }
+
+    // 1. HORIZONTAL BAR LAYOUT (Default top/bottom bar)
     Row {
       id: contentRow
+      visible: !root.isVertical
       anchors.centerIn: parent
       spacing: Style.space(6)
 
-      // 1. Pomodoro Phase Icon
+      // Phase Icon
       Text {
         anchors.verticalCenter: parent.verticalCenter
         text: root.iconText
         font.family: root.fontFamily
         font.pixelSize: root.mainFontSize + 2
-        color: root.phase !== "work" ? Commons.Color.accent : (root.isRunning ? root.barForeground : root.barForeground)
+        color: root.phase !== "work" ? root.accentColor : root.barForeground
         opacity: root.isRunning ? 1.0 : 0.65
         renderType: Text.NativeRendering
 
@@ -159,26 +179,65 @@ BarWidget {
         }
       }
 
-      // 2. Countdown Time
+      // Countdown Time
       Text {
         anchors.verticalCenter: parent.verticalCenter
         text: root.timeText
         font.family: root.fontFamily
         font.pixelSize: root.mainFontSize
         font.bold: root.isRunning
-        color: root.phase !== "work" ? Commons.Color.accent : root.barForeground
+        color: root.phase !== "work" ? root.accentColor : root.barForeground
         opacity: root.isRunning ? 1.0 : 0.75
         renderType: Text.NativeRendering
       }
 
-      // 3. Cycle Dots (Minimalist session indicators: ●●○○)
+      // Session Dots (●●○○)
       Text {
         anchors.verticalCenter: parent.verticalCenter
         text: root.dotsText
         font.family: root.fontFamily
+        font.pixelSize: root.subFontSize
+        color: root.barForeground
+        opacity: 0.50
+        renderType: Text.NativeRendering
+      }
+    }
+
+    // 2. VERTICAL BAR LAYOUT (For left/right side bars)
+    Column {
+      id: contentCol
+      visible: root.isVertical
+      anchors.centerIn: parent
+      spacing: Style.space(2)
+
+      Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: root.iconText
+        font.family: root.fontFamily
+        font.pixelSize: root.mainFontSize + 1
+        color: root.phase !== "work" ? root.accentColor : root.barForeground
+        opacity: root.isRunning ? 1.0 : 0.65
+        renderType: Text.NativeRendering
+      }
+
+      Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: root.timeText
+        font.family: root.fontFamily
+        font.pixelSize: root.subFontSize + 1
+        font.bold: root.isRunning
+        color: root.phase !== "work" ? root.accentColor : root.barForeground
+        opacity: root.isRunning ? 1.0 : 0.75
+        renderType: Text.NativeRendering
+      }
+
+      Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: root.dotsText
+        font.family: root.fontFamily
         font.pixelSize: root.subFontSize - 1
         color: root.barForeground
-        opacity: 0.55
+        opacity: 0.50
         renderType: Text.NativeRendering
       }
     }
