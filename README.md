@@ -1,54 +1,73 @@
 # Omarchy Pomodoro (`khudoydev.pomodoro`)
 
-A lightweight, distraction-free Pomodoro focus timer widget built for **Omarchy Linux** (Hyprland + Quickshell).
+<div align="center">
+
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg?style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro)
+[![Platform](https://img.shields.io/badge/platform-Omarchy%20%7C%20Hyprland-7aa2f7.svg?style=for-the-badge)](https://github.com/basecamp/omarchy)
+[![Technology](https://img.shields.io/badge/tech-Quickshell%20%E2%80%A2%20QML%20%E2%80%A2%20Python%203-10b981.svg?style=for-the-badge)](#features)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+A production-grade, distraction-free Pomodoro focus timer widget crafted for **[Omarchy Linux](https://github.com/basecamp/omarchy)** (Hyprland + Quickshell).
+
+Displays real-time focus sessions, cycle progress dots, and delivers desktop notifications with sound chimes, presets, and productivity history.
+
+</div>
 
 ---
 
 ## 📸 Preview
 
-### Top Bar Appearance
+### Top Bar Widget
 ```text
-┌───────────────────────────────────────────────┐
-│   [ Tray ]   [ Sysmon ]   [ 󰄉 25:00  ○○○○ ]   │
-└───────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│  [ Tray ]   [ Sysmon ]   [ 󰄉 25:00  ○○○○ ]   │
+└──────────────────────────────────────────────┘
 ```
 
-### Interactive Hover Tooltip
+### Companion Settings & Stats Card (Right Click)
 ```text
-󰄉 Focus Session (24:18 left)
-─────────────────────────────
-Progress: [██████░░░░░░] 50%
-Today:    4 completed (1h 40m)
-─────────────────────────────
-Left: Start/Pause • Right: Skip • Middle: Reset
+┌──────────────────────────────────────────────┐
+│ 󰄉 Pomodoro Focus Timer                    ✕  │
+│ Focusing...                                  │
+├──────────────────────────────────────────────┤
+│ FOCUS MODE                                   │
+│ [ 25/5 Classic ] [ 50/10 Deep ] [ 15/3 Fast] │
+├──────────────────────────────────────────────┤
+│ 🔔 Audio Chime Alerts            [ Enabled ] │
+├──────────────────────────────────────────────┤
+│ [ 󰏤 Pause ]      [ 󰒭 Skip ]      [ 󰦛 Reset ] │
+├──────────────────────────────────────────────┤
+│ TODAY: 4 sessions (1h 40m)                   │
+│ 7 DAYS: 18 sessions (7h 30m)                 │
+└──────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 How It Works (Step-by-Step)
+## ✨ Features
 
-1. **Start Focusing (Left Click)**:
-   - Click the widget with your **left mouse button**.
-   - The countdown immediately begins ticking (`24:59`, `24:58`...) and turns bright/vibrant.
-   - Click again anytime to pause.
-
-2. **Take a Break (Right Click or Auto-Timer)**:
-   - When the 25-minute session completes, a pleasant audio chime plays and a desktop alert notifies you.
-   - You can also skip directly to a 5-minute break anytime with a **right click**.
-   - The widget turns a soothing break accent color (`󰔄 05:00`).
-
-3. **Reset Session (Middle Click)**:
-   - Click with your **middle mouse button** (scroll wheel) to reset back to a fresh 25:00 focus state.
-
-4. **First-Time Welcome Card**:
-   - On the very first launch, a sleek interactive onboarding card pops down directly from the widget to introduce all actions.
-   - Click **"Start Focusing 🚀"** to close it and start your timer.
+- **⚡ Instant Mouse Controls**:
+  - **Left Click**: Start / Pause the current session.
+  - **Right Click**: Opens the interactive **Settings & Presets Card**.
+  - **Middle Click**: Instantly resets the timer back to 25:00.
+- **🎯 3 Focus Modes / Presets**:
+  - **25/5 Classic**: Standard Pomodoro (25m Focus / 5m Break / 15m Long Break).
+  - **50/10 Deep Work**: Extended flow-state sessions for programming and engineering.
+  - **15/3 Quick Sprint**: Rapid sprints for task planning and bug squashing.
+- **🔔 Audio Alerts & Mute Toggle**:
+  - System sound chimes (`pw-play` / `paplay`) when sessions end.
+  - Toggle audio on or mute anytime from the settings card.
+- **📊 Productivity Tracking**:
+  - Keeps local daily and 7-day focus statistics in `~/.local/state/omarchy/pomodoro_history.json`.
+  - Survives reboots and shell restarts.
+- **🎨 100% Theme & Wallpaper Adaptive**:
+  - Dynamically adopts Omarchy theme colors, dark/light modes, transparency, and vertical bars.
 
 ---
 
-## 📦 Installation
+## 🚀 Installation
 
-Install directly using the Omarchy plugin CLI:
+Install via the Omarchy plugin CLI:
 
 ```bash
 omarchy plugin add https://github.com/khudoydev155/omarchy-pomodoro.git --enable
@@ -60,7 +79,7 @@ Or manually clone it into your plugins directory:
 git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
 ```
 
-Then add `"khudoydev.pomodoro"` to your bar layout in `~/.config/omarchy/shell.json`:
+Add `"khudoydev.pomodoro"` to your `~/.config/omarchy/shell.json` inside `"bar.layout.right"`:
 
 ```json
 {
@@ -74,20 +93,11 @@ Then add `"khudoydev.pomodoro"` to your bar layout in `~/.config/omarchy/shell.j
 }
 ```
 
-Reload the Omarchy shell to activate:
+Reload the shell:
 
 ```bash
 omarchy restart shell
 ```
-
----
-
-## ⚙️ Features
-
-- **Zero Clutter**: Clean monospaced digits with subtle phase glyph and discrete cycle dots (`●●○○`).
-- **Fully Adaptive**: Automatically follows your Omarchy theme colors, dark/light modes, transparency, and vertical bars.
-- **Persistent Progress**: Survives shell restarts and computer reboots without losing today's focus count.
-- **Native Audio & Alerts**: Utilizes system sound chimes via PipeWire / PulseAudio and desktop notifications.
 
 ---
 

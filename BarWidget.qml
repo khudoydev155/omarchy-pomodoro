@@ -29,10 +29,20 @@ BarWidget {
   property string dotsText: "○○○○"
   property int secondsLeft: 1500
   property int progressPct: 0
-  property string tooltipText: "󰏤 Focus (25:00 left) [Paused]\n─────────────────────────────\nProgress: [░░░░░░░░░░░░] 0%\nToday:    0 completed (0m)\n─────────────────────────────\nLeft: Start/Pause • Right: Skip • Middle: Reset"
 
-  // Onboarding modal states
-  property bool onboardingOpen: false
+  // Presets and Sound states
+  property string currentPreset: "25/5"
+  property string currentPresetName: "Classic"
+  property bool soundEnabled: true
+  property int completedToday: 0
+  property string focusTimeStr: "0m"
+  property int weekCompleted: 0
+  property string weekFocusStr: "0m"
+
+  property string tooltipText: "󰏤 Focus (25:00 left) [Paused]\n─────────────────────────────\nProgress: [░░░░░░░░░░░░] 0%\nToday:    0 sessions (0m)\n─────────────────────────────\nLeft: Start/Pause • Right: Settings • Middle: Reset"
+
+  // Settings Card modal state
+  property bool cardOpen: false
   property bool onboardingDismissed: false
 
   // Adaptive geometry that smoothly resizes for any font scale and vertical/horizontal bars
@@ -52,7 +62,7 @@ BarWidget {
 
   function triggerPress(button) {
     if (button === Qt.RightButton) {
-      root.runAction("skip")
+      root.cardOpen = !root.cardOpen
     } else if (button === Qt.MiddleButton) {
       root.runAction("reset")
     } else {
@@ -82,11 +92,18 @@ BarWidget {
 
     root.dotsText = data.dots || "○○○○"
     root.progressPct = data.pct || 0
+    root.currentPreset = data.preset || "25/5"
+    root.currentPresetName = data.preset_name || "Classic"
+    root.soundEnabled = data.sound_enabled !== undefined ? data.sound_enabled : true
+    root.completedToday = data.completed_today || 0
+    root.focusTimeStr = data.focus_time_str || "0m"
+    root.weekCompleted = data.week_completed || 0
+    root.weekFocusStr = data.week_focus_str || "0m"
     root.tooltipText = data.tooltip || ""
 
     // Trigger onboarding popup if it has never been completed
-    if (data.onboarding_done === false && !root.onboardingDismissed && !root.onboardingOpen && !!root.bar) {
-      root.onboardingOpen = true
+    if (data.onboarding_done === false && !root.onboardingDismissed && !root.cardOpen && !!root.bar) {
+      root.cardOpen = true
     }
 
     if (pomodoroMouseArea.containsMouse && root.bar) {
@@ -94,7 +111,7 @@ BarWidget {
     }
   }
 
-  function runAction(act) {
+  function runAction(act, arg) {
     // Instant optimistic UI feedback
     if (act === "toggle") {
       root.isRunning = !root.isRunning
@@ -106,31 +123,47 @@ BarWidget {
     } else if (act === "reset") {
       root.isRunning = false
       root.phase = "work"
-      root.secondsLeft = 1500
-      root.timeText = "25:00"
+      var dur = root.currentPreset === "50/10" ? 3000 : (root.currentPreset === "15/3" ? 900 : 1500)
+      root.secondsLeft = dur
+      root.timeText = root.formatTime(dur)
       root.iconText = "󰏤"
       root.progressPct = 0
     } else if (act === "skip") {
       root.isRunning = false
       if (root.phase === "work") {
         root.phase = "break"
-        root.secondsLeft = 300
-        root.timeText = "05:00"
+        var bdur = root.currentPreset === "50/10" ? 600 : (root.currentPreset === "15/3" ? 180 : 300)
+        root.secondsLeft = bdur
+        root.timeText = root.formatTime(bdur)
         root.iconText = "󰔄"
       } else {
         root.phase = "work"
-        root.secondsLeft = 1500
-        root.timeText = "25:00"
+        var wdur = root.currentPreset === "50/10" ? 3000 : (root.currentPreset === "15/3" ? 900 : 1500)
+        root.secondsLeft = wdur
+        root.timeText = root.formatTime(wdur)
         root.iconText = "󰏤"
       }
+    } else if (act === "set_preset") {
+      root.currentPreset = arg
+      root.isRunning = false
+      root.phase = "work"
+      var pdur = arg === "50/10" ? 3000 : (arg === "15/3" ? 900 : 1500)
+      root.secondsLeft = pdur
+      root.timeText = root.formatTime(pdur)
+      root.dotsText = arg === "50/10" ? "○○○" : "○○○○"
+    } else if (act === "toggle_sound") {
+      root.soundEnabled = !root.soundEnabled
     } else if (act === "onboarding_done") {
-      root.onboardingOpen = false
+      root.cardOpen = false
       root.onboardingDismissed = true
     }
 
     // Execute Python action immediately
+    var cmd = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), act]
+    if (arg) cmd.push(arg)
+
     actionProc.running = false
-    actionProc.command = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), act]
+    actionProc.command = cmd
     actionProc.running = true
   }
 
@@ -307,26 +340,26 @@ BarWidget {
     }
   }
 
-  // OPTION A: Interactive Onboarding Popup Card
+  // Interactive Settings, Presets & Controls Card
   Loader {
-    id: onboardingLoader
-    active: root.onboardingOpen && !!root.bar
+    id: cardLoader
+    active: root.cardOpen && !!root.bar
     sourceComponent: Component {
       PopupCard {
-        id: onboardingPopup
+        id: settingsPopup
         anchorItem: root
         bar: root.bar
         owner: root
-        open: root.onboardingOpen
+        open: root.cardOpen
         margin: Style.space(24)
         onOpenChanged: {
           if (!open) {
-            root.onboardingOpen = false
+            root.cardOpen = false
             root.onboardingDismissed = true
             root.runAction("onboarding_done")
           }
         }
-        contentWidth: Style.space(330)
+        contentWidth: Style.space(340)
         contentHeight: cardCol.implicitHeight + Style.space(28)
 
         Column {
@@ -361,11 +394,11 @@ BarWidget {
                   color: root.barForeground
                 }
                 Text {
-                  text: "Minimalist productivity widget"
+                  text: root.phase === "work" ? (root.isRunning ? "Focusing..." : "Paused") : "Break Time"
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
-                  color: root.barForeground
-                  opacity: 0.65
+                  color: root.phase !== "work" ? root.accentColor : root.barForeground
+                  opacity: 0.75
                 }
               }
             }
@@ -394,7 +427,7 @@ BarWidget {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  root.onboardingOpen = false
+                  root.cardOpen = false
                   root.onboardingDismissed = true
                   root.runAction("onboarding_done")
                 }
@@ -409,35 +442,206 @@ BarWidget {
             opacity: 0.12
           }
 
-          // 2. Step-by-step mouse actions
+          // 2. Presets Selector (Pill tabs)
           Column {
             width: parent.width
-            spacing: Style.space(8)
+            spacing: Style.space(6)
 
-            Row {
-              spacing: Style.space(10)
-              Text { text: "🖱️"; font.pixelSize: Style.font.caption + 2 }
-              Column {
-                Text { text: "Left Click — Start / Pause"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
-                Text { text: "Begins or pauses your 25-minute focus session"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
-              }
+            Text {
+              text: "FOCUS MODE"
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption - 1
+              font.bold: true
+              color: root.barForeground
+              opacity: 0.6
             }
 
             Row {
-              spacing: Style.space(10)
-              Text { text: "⏭️"; font.pixelSize: Style.font.caption + 2 }
-              Column {
-                Text { text: "Right Click — Skip Phase"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
-                Text { text: "Switches instantly between Focus ↔ Break (5m / 15m)"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
+              width: parent.width
+              spacing: Style.space(6)
+
+              Repeater {
+                model: [
+                  { key: "25/5", label: "25/5 Classic" },
+                  { key: "50/10", label: "50/10 Deep" },
+                  { key: "15/3", label: "15/3 Sprint" }
+                ]
+
+                Rectangle {
+                  required property int index
+                  required property var modelData
+
+                  readonly property bool activePreset: root.currentPreset === modelData.key
+
+                  width: (parent.width - Style.space(12)) / 3
+                  height: Style.space(30)
+                  radius: Style.space(6)
+                  color: activePreset ? Util.alpha(root.accentColor, 0.25) : (presetHover.containsMouse ? Util.alpha(root.barForeground, 0.08) : "transparent")
+                  border.width: 1
+                  border.color: activePreset ? root.accentColor : Util.alpha(root.barForeground, 0.18)
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption - 1
+                    font.bold: activePreset
+                    color: activePreset ? root.accentColor : root.barForeground
+                  }
+
+                  MouseArea {
+                    id: presetHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      root.runAction("set_preset", modelData.key)
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. Sound Settings Toggle Row
+          Rectangle {
+            width: parent.width
+            height: Style.space(36)
+            radius: Style.space(6)
+            color: Util.alpha(root.barForeground, 0.06)
+
+            Row {
+              anchors.left: parent.left
+              anchors.leftMargin: Style.space(12)
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(8)
+
+              Text {
+                text: root.soundEnabled ? "🔔" : "🔕"
+                font.pixelSize: Style.font.caption + 1
+              }
+
+              Text {
+                text: "Audio Chime Alerts"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                color: root.barForeground
               }
             }
 
-            Row {
-              spacing: Style.space(10)
-              Text { text: "🔄"; font.pixelSize: Style.font.caption + 2 }
-              Column {
-                Text { text: "Middle Click — Reset"; font.bold: true; font.family: root.fontFamily; font.pixelSize: Style.font.caption; color: root.barForeground }
-                Text { text: "Resets the timer back to 25:00"; font.family: root.fontFamily; font.pixelSize: Style.font.caption - 1; color: root.barForeground; opacity: 0.65 }
+            Rectangle {
+              anchors.right: parent.right
+              anchors.rightMargin: Style.space(8)
+              anchors.verticalCenter: parent.verticalCenter
+              width: Style.space(70)
+              height: Style.space(24)
+              radius: Style.space(12)
+              color: root.soundEnabled ? Util.alpha(root.accentColor, 0.25) : Util.alpha(root.barForeground, 0.12)
+              border.width: 1
+              border.color: root.soundEnabled ? root.accentColor : Util.alpha(root.barForeground, 0.2)
+
+              Text {
+                anchors.centerIn: parent
+                text: root.soundEnabled ? "Enabled" : "Muted"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption - 2
+                font.bold: true
+                color: root.soundEnabled ? root.accentColor : root.barForeground
+                opacity: root.soundEnabled ? 1.0 : 0.6
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.runAction("toggle_sound")
+              }
+            }
+          }
+
+          // 4. Quick Action Controls (Start/Pause, Skip, Reset)
+          Row {
+            width: parent.width
+            spacing: Style.space(6)
+
+            // Primary Toggle
+            Rectangle {
+              width: (parent.width - Style.space(12)) * 0.44
+              height: Style.space(34)
+              radius: Style.space(6)
+              color: toggleHover.containsMouse ? root.accentColor : Util.alpha(root.accentColor, 0.22)
+              border.width: 1
+              border.color: root.accentColor
+
+              Text {
+                anchors.centerIn: parent
+                text: root.isRunning ? "󰏤 Pause" : "󰐊 Start"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                color: toggleHover.containsMouse ? (root.bar ? root.bar.themeContrastForeground : "#101315") : root.accentColor
+              }
+
+              MouseArea {
+                id: toggleHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  root.runAction("toggle")
+                  root.runAction("onboarding_done")
+                }
+              }
+            }
+
+            // Skip Button
+            Rectangle {
+              width: (parent.width - Style.space(12)) * 0.28
+              height: Style.space(34)
+              radius: Style.space(6)
+              color: skipHover.containsMouse ? Util.alpha(root.barForeground, 0.12) : "transparent"
+              border.width: 1
+              border.color: Util.alpha(root.barForeground, 0.2)
+
+              Text {
+                anchors.centerIn: parent
+                text: "󰒭 Skip"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                color: root.barForeground
+              }
+
+              MouseArea {
+                id: skipHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.runAction("skip")
+              }
+            }
+
+            // Reset Button
+            Rectangle {
+              width: (parent.width - Style.space(12)) * 0.28
+              height: Style.space(34)
+              radius: Style.space(6)
+              color: resetHover.containsMouse ? Util.alpha(root.barForeground, 0.12) : "transparent"
+              border.width: 1
+              border.color: Util.alpha(root.barForeground, 0.2)
+
+              Text {
+                anchors.centerIn: parent
+                text: "󰦛 Reset"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                color: root.barForeground
+              }
+
+              MouseArea {
+                id: resetHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.runAction("reset")
               }
             }
           }
@@ -449,45 +653,50 @@ BarWidget {
             opacity: 0.12
           }
 
-          // 3. Audio & Bar hint
-          Text {
+          // 5. Productivity Stats Summary
+          Row {
             width: parent.width
-            text: "🔔 Plays a sound chime & sends desktop alerts when each session completes."
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption - 1
-            color: root.barForeground
-            opacity: 0.75
-            wrapMode: Text.WordWrap
-          }
 
-          // 4. Action Button: "Start Focusing 🚀"
-          Rectangle {
-            width: parent.width
-            height: Style.space(36)
-            radius: Style.space(6)
-            color: btnHover.containsMouse ? root.accentColor : Util.alpha(root.accentColor, 0.18)
-            border.width: 1
-            border.color: root.accentColor
-
-            Text {
-              anchors.centerIn: parent
-              text: "Start Focusing 🚀"
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption + 1
-              font.bold: true
-              color: btnHover.containsMouse ? (root.bar ? root.bar.themeContrastForeground : "#101315") : root.accentColor
+            Column {
+              spacing: 2
+              Text {
+                text: "TODAY"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption - 2
+                font.bold: true
+                color: root.barForeground
+                opacity: 0.55
+              }
+              Text {
+                text: root.completedToday + " sessions (" + root.focusTimeStr + ")"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                color: root.barForeground
+              }
             }
 
-            MouseArea {
-              id: btnHover
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                root.onboardingOpen = false
-                root.onboardingDismissed = true
-                root.runAction("onboarding_done")
-                root.runAction("toggle")
+            Item { Layout.fillWidth: true; width: Style.space(10) }
+
+            Column {
+              anchors.right: parent.right
+              spacing: 2
+              Text {
+                anchors.right: parent.right
+                text: "7 DAYS"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption - 2
+                font.bold: true
+                color: root.barForeground
+                opacity: 0.55
+              }
+              Text {
+                anchors.right: parent.right
+                text: root.weekCompleted + " sessions (" + root.weekFocusStr + ")"
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                color: root.accentColor
               }
             }
           }

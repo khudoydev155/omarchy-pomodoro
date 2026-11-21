@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "khudoydev.pomodoro",
   "name": "Pomodoro",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "khudoydev",
   "license": "MIT",
-  "description": "Minimalist Pomodoro focus timer with audio alerts and session tracking for Omarchy bar",
+  "description": "Production-grade Pomodoro focus timer with presets, audio alerts, and session tracking for Omarchy bar",
   "kinds": [
     "bar-widget"
   ],

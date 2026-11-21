@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-import sys, os, json, time, subprocess
+import sys, os, json, time, subprocess, datetime
 from datetime import date
 
-WORK_SEC = 25 * 60
-SHORT_BREAK_SEC = 5 * 60
-LONG_BREAK_SEC = 15 * 60
-CYCLES_BEFORE_LONG = 4
+PRESETS = {
+    "25/5": {"name": "Classic", "work": 25 * 60, "break": 5 * 60, "long_break": 15 * 60, "cycles": 4},
+    "50/10": {"name": "Deep Work", "work": 50 * 60, "break": 10 * 60, "long_break": 20 * 60, "cycles": 3},
+    "15/3": {"name": "Sprint", "work": 15 * 60, "break": 3 * 60, "long_break": 10 * 60, "cycles": 4}
+}
 
 STATE_DIR = os.path.expanduser("~/.local/state/omarchy")
 os.makedirs(STATE_DIR, exist_ok=True)
 STATE_FILE = os.path.join(STATE_DIR, "pomodoro_state.json")
+HISTORY_FILE = os.path.join(STATE_DIR, "pomodoro_history.json")
 
 def fmt_time(sec):
     sec = max(0, int(sec))
@@ -26,7 +28,46 @@ def fmt_duration(sec):
     rem_m = m % 60
     return f"{h}h {rem_m}m" if rem_m > 0 else f"{h}h"
 
-def play_chime():
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def record_session(sec_spent):
+    history = load_history()
+    today_str = str(date.today())
+    if today_str not in history:
+        history[today_str] = {"completed": 0, "focus_sec": 0}
+    history[today_str]["completed"] += 1
+    history[today_str]["focus_sec"] += sec_spent
+    try:
+        tmp = HISTORY_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(history, f, indent=2)
+        os.replace(tmp, HISTORY_FILE)
+    except Exception:
+        pass
+
+def get_weekly_stats():
+    history = load_history()
+    today = date.today()
+    week_completed = 0
+    week_sec = 0
+    for i in range(7):
+        d_str = str(today - datetime.timedelta(days=i))
+        if d_str in history:
+            week_completed += history[d_str].get("completed", 0)
+            week_sec += history[d_str].get("focus_sec", 0)
+    return week_completed, week_sec
+
+def play_chime(sound_enabled=True):
+    if not sound_enabled:
+        return
+
     sound_files = [
         "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
         "/usr/share/sounds/freedesktop/stereo/complete.oga",
@@ -59,16 +100,22 @@ def send_notification(title, message):
     except Exception:
         pass
 
+def get_preset_config(preset_key):
+    return PRESETS.get(preset_key, PRESETS["25/5"])
+
 def get_default_state():
+    cfg = get_preset_config("25/5")
     return {
         "date": str(date.today()),
         "phase": "work",
         "running": False,
-        "remaining": WORK_SEC,
+        "remaining": cfg["work"],
         "target_ts": None,
         "cycle": 0,
         "completed_today": 0,
         "focus_sec_today": 0,
+        "preset": "25/5",
+        "sound_enabled": True,
         "onboarding_done": False
     }
 
@@ -84,6 +131,10 @@ def load_state():
                 state["completed_today"] = 0
                 state["focus_sec_today"] = 0
                 state["cycle"] = 0
+            if "preset" not in state:
+                state["preset"] = "25/5"
+            if "sound_enabled" not in state:
+                state["sound_enabled"] = True
             return state
         except Exception:
             pass
@@ -105,27 +156,31 @@ def make_progress_bar(pct, length=12):
 
 def tick(state):
     now = time.time()
+    cfg = get_preset_config(state.get("preset", "25/5"))
+    sound_enabled = state.get("sound_enabled", True)
+
     if state["running"] and state.get("target_ts"):
         rem = int(state["target_ts"] - now)
         if rem <= 0:
             # Phase finished!
-            play_chime()
+            play_chime(sound_enabled)
             cur_phase = state["phase"]
             if cur_phase == "work":
                 state["completed_today"] += 1
-                state["focus_sec_today"] += WORK_SEC
-                state["cycle"] = (state.get("cycle", 0) + 1) % CYCLES_BEFORE_LONG
+                state["focus_sec_today"] += cfg["work"]
+                record_session(cfg["work"])
+                state["cycle"] = (state.get("cycle", 0) + 1) % cfg["cycles"]
                 if state["cycle"] == 0:
                     state["phase"] = "long_break"
-                    state["remaining"] = LONG_BREAK_SEC
-                    send_notification("Pomodoro", "Work cycle complete! Take a 15-minute break ☕")
+                    state["remaining"] = cfg["long_break"]
+                    send_notification("Pomodoro", f"Focus cycle complete! Take a {cfg['long_break'] // 60}-minute break ☕")
                 else:
                     state["phase"] = "break"
-                    state["remaining"] = SHORT_BREAK_SEC
-                    send_notification("Pomodoro", "Focus session complete! Take a 5-minute break ☕")
+                    state["remaining"] = cfg["break"]
+                    send_notification("Pomodoro", f"Focus session complete! Take a {cfg['break'] // 60}-minute break ☕")
             else:
                 state["phase"] = "work"
-                state["remaining"] = WORK_SEC
+                state["remaining"] = cfg["work"]
                 send_notification("Pomodoro", "Break finished! Ready to focus? 🚀")
 
             state["running"] = False
@@ -137,6 +192,8 @@ def tick(state):
 def handle_toggle(state):
     state = tick(state)
     now = time.time()
+    cfg = get_preset_config(state.get("preset", "25/5"))
+
     if state["running"]:
         # Pause
         if state.get("target_ts"):
@@ -145,66 +202,88 @@ def handle_toggle(state):
         state["target_ts"] = None
     else:
         # Resume / Start
-        if state["remaining"] <= 0:
+        if state.get("remaining", 0) <= 0:
             if state["phase"] == "work":
-                state["remaining"] = WORK_SEC
+                state["remaining"] = cfg["work"]
             elif state["phase"] == "long_break":
-                state["remaining"] = LONG_BREAK_SEC
+                state["remaining"] = cfg["long_break"]
             else:
-                state["remaining"] = SHORT_BREAK_SEC
+                state["remaining"] = cfg["break"]
         state["running"] = True
         state["target_ts"] = now + state["remaining"]
     save_state(state)
 
 def handle_skip(state):
+    cfg = get_preset_config(state.get("preset", "25/5"))
     cur_phase = state["phase"]
     if cur_phase == "work":
-        state["cycle"] = (state.get("cycle", 0) + 1) % CYCLES_BEFORE_LONG
+        state["cycle"] = (state.get("cycle", 0) + 1) % cfg["cycles"]
         if state["cycle"] == 0:
             state["phase"] = "long_break"
-            state["remaining"] = LONG_BREAK_SEC
+            state["remaining"] = cfg["long_break"]
         else:
             state["phase"] = "break"
-            state["remaining"] = SHORT_BREAK_SEC
+            state["remaining"] = cfg["break"]
     else:
         state["phase"] = "work"
-        state["remaining"] = WORK_SEC
+        state["remaining"] = cfg["work"]
 
     state["running"] = False
     state["target_ts"] = None
     save_state(state)
 
 def handle_reset(state):
+    cfg = get_preset_config(state.get("preset", "25/5"))
     state["phase"] = "work"
-    state["remaining"] = WORK_SEC
+    state["remaining"] = cfg["work"]
     state["running"] = False
     state["target_ts"] = None
+    save_state(state)
+
+def handle_set_preset(state, preset_key):
+    if preset_key not in PRESETS:
+        return
+    state["preset"] = preset_key
+    cfg = PRESETS[preset_key]
+    state["running"] = False
+    state["target_ts"] = None
+    state["phase"] = "work"
+    state["remaining"] = cfg["work"]
+    state["cycle"] = 0
+    save_state(state)
+
+def handle_toggle_sound(state):
+    state["sound_enabled"] = not state.get("sound_enabled", True)
     save_state(state)
 
 def get_status_payload(state):
     state = tick(state)
     save_state(state)
 
+    preset_key = state.get("preset", "25/5")
+    cfg = get_preset_config(preset_key)
     phase = state["phase"]
     running = state["running"]
     rem = state["remaining"]
+    sound_enabled = state.get("sound_enabled", True)
 
     if phase == "work":
-        total_sec = WORK_SEC
+        total_sec = cfg["work"]
         phase_label = "Focus"
     elif phase == "long_break":
-        total_sec = LONG_BREAK_SEC
+        total_sec = cfg["long_break"]
         phase_label = "Long Break"
     else:
-        total_sec = SHORT_BREAK_SEC
+        total_sec = cfg["break"]
         phase_label = "Break"
 
     elapsed = max(0, total_sec - rem)
     pct = int(min(100, max(0, round((elapsed / total_sec) * 100)))) if total_sec > 0 else 0
 
-    # Clean dots for completed cycles in current block of 4
+    # Clean dots for completed cycles in current block
     cycle = state.get("cycle", 0)
-    dots = "●" * cycle + "○" * (CYCLES_BEFORE_LONG - cycle)
+    max_cycles = cfg["cycles"]
+    dots = "●" * cycle + "○" * max(0, max_cycles - cycle)
 
     # Clean icon
     if phase == "work":
@@ -219,22 +298,29 @@ def get_status_payload(state):
     completed = state.get("completed_today", 0)
     focus_time_str = fmt_duration(state.get("focus_sec_today", 0))
 
+    week_completed, week_sec = get_weekly_stats()
+    week_focus_str = fmt_duration(week_sec)
+
     state_desc = f"{phase_label} ({fmt_time(rem)} left)"
     if not running:
         state_desc += " [Paused]"
 
+    sound_str = "🔔 On" if sound_enabled else "🔕 Muted"
+
     tooltip_lines = [
-        f"{icon} {state_desc}",
+        f"{icon} {state_desc}   [{cfg['name']} {preset_key}]",
         "─────────────────────────────",
         f"Progress: [{prog_bar}] {pct}%",
-        f"Today:    {completed} completed ({focus_time_str})",
+        f"Today:    {completed} sessions ({focus_time_str})",
+        f"7 Days:   {week_completed} sessions ({week_focus_str})",
+        f"Sound:    {sound_str}",
         "─────────────────────────────",
-        "Left: Start/Pause • Right: Skip • Middle: Reset"
+        "Left: Start/Pause • Right: Settings • Middle: Reset"
     ]
 
     # First time install notification (Option B)
     if not state.get("onboarding_done", False) and not state.get("onboarding_notif_sent", False):
-        send_notification("Pomodoro Timer 󰄉", "Ready to focus! Left click to start, Right click to skip, Middle click to reset.")
+        send_notification("Pomodoro Timer 󰄉", "Ready to focus! Left click to start, Right click for settings & presets.")
         state["onboarding_notif_sent"] = True
         save_state(state)
 
@@ -248,8 +334,13 @@ def get_status_payload(state):
         "total_sec": total_sec,
         "dots": dots,
         "pct": pct,
+        "preset": preset_key,
+        "preset_name": cfg["name"],
+        "sound_enabled": sound_enabled,
         "completed_today": completed,
         "focus_time_str": focus_time_str,
+        "week_completed": week_completed,
+        "week_focus_str": week_focus_str,
         "onboarding_done": state.get("onboarding_done", False),
         "tooltip": "\n".join(tooltip_lines)
     }
@@ -264,6 +355,11 @@ def main():
         handle_skip(state)
     elif action == "reset":
         handle_reset(state)
+    elif action == "set_preset":
+        preset_arg = sys.argv[2] if len(sys.argv) > 2 else "25/5"
+        handle_set_preset(state, preset_arg)
+    elif action == "toggle_sound":
+        handle_toggle_sound(state)
     elif action == "onboarding_done":
         state["onboarding_done"] = True
         save_state(state)
