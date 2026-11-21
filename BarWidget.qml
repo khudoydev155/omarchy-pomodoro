@@ -51,18 +51,18 @@ BarWidget {
 
   function runAction(act) {
     if (actionProc.running) return
-    actionProc.command = ["python3", Qt.resolvedUrl("pomodoro.py").replace("file://", ""), act]
+    actionProc.command = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), act]
     actionProc.running = true
   }
 
   Process {
     id: actionProc
-    command: ["python3", Qt.resolvedUrl("pomodoro.py").replace("file://", ""), "status"]
+    command: ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), "status"]
     running: false
 
-    stdout: SplitParser {
-      split: "\n"
-      onRead: data => root.parseOutput(data)
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: text => root.parseOutput(text)
     }
   }
 
@@ -74,7 +74,7 @@ BarWidget {
     triggeredOnStart: true
     onTriggered: {
       if (!actionProc.running) {
-        actionProc.command = ["python3", Qt.resolvedUrl("pomodoro.py").replace("file://", ""), "status"]
+        actionProc.command = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), "status"]
         actionProc.running = true
       }
       if (pomodoroMouseArea.containsMouse && root.bar) {
@@ -135,7 +135,7 @@ BarWidget {
 
       onEntered: {
         if (!actionProc.running) {
-          actionProc.command = ["python3", Qt.resolvedUrl("pomodoro.py").replace("file://", ""), "status"]
+          actionProc.command = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), "status"]
           actionProc.running = true
         }
         if (root.bar) root.bar.showTooltip(root, root.tooltipText)
