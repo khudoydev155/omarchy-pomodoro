@@ -24,7 +24,7 @@ BarWidget {
   property int progressPct: 0
   property string tooltipText: "󰄉 Focus (25:00 left)\nLeft: Start/Pause • Right: Skip • Middle: Reset"
 
-  implicitWidth: contentRow.implicitWidth + Style.space(16)
+  implicitWidth: Style.space(92)
   implicitHeight: root.barSize
 
   function parseOutput(text) {
