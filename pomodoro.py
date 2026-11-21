@@ -237,6 +237,8 @@ def get_status_payload(state):
         "running": running,
         "icon": icon,
         "time_str": fmt_time(rem),
+        "sec_remaining": rem,
+        "total_sec": total_sec,
         "dots": dots,
         "pct": pct,
         "completed_today": completed,

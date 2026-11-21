@@ -27,8 +27,8 @@ BarWidget {
   property string iconText: "󰏤"
   property string timeText: "25:00"
   property string dotsText: "○○○○"
-  property int progressPct: 0
   property int secondsLeft: 1500
+  property int progressPct: 0
   property string tooltipText: "󰏤 Focus (25:00 left) [Paused]\n─────────────────────────────\nProgress: [░░░░░░░░░░░░] 0%\nToday:    0 completed (0m)\n─────────────────────────────\nLeft: Start/Pause • Right: Skip • Middle: Reset"
 
   // Adaptive geometry that smoothly resizes for any font scale and vertical/horizontal bars
@@ -36,6 +36,15 @@ BarWidget {
   implicitHeight: root.isVertical ? Math.max(Style.space(76), contentCol.implicitHeight + Style.space(12)) : root.barSize
 
   signal pressed(int button)
+
+  function formatTime(sec) {
+    sec = Math.max(0, Math.floor(sec))
+    var m = Math.floor(sec / 60)
+    var s = sec % 60
+    var mStr = (m < 10 ? "0" : "") + m
+    var sStr = (s < 10 ? "0" : "") + s
+    return mStr + ":" + sStr
+  }
 
   function triggerPress(button) {
     if (button === Qt.RightButton) {
@@ -47,11 +56,11 @@ BarWidget {
     }
   }
 
-  function parseOutput(text) {
-    if (!text) return
+  function parseOutput(raw) {
+    if (!raw) return
     var data
     try {
-      data = JSON.parse(text.trim())
+      data = JSON.parse(String(raw).trim())
     } catch (e) {
       return
     }
@@ -59,7 +68,14 @@ BarWidget {
     root.phase = data.phase || "work"
     root.isRunning = data.running || false
     root.iconText = data.icon || (root.isRunning ? "󰄉" : "󰏤")
-    root.timeText = data.time_str || "25:00"
+
+    if (data.sec_remaining !== undefined && data.sec_remaining !== null) {
+      root.secondsLeft = data.sec_remaining
+      root.timeText = root.formatTime(root.secondsLeft)
+    } else if (data.time_str) {
+      root.timeText = data.time_str
+    }
+
     root.dotsText = data.dots || "○○○○"
     root.progressPct = data.pct || 0
     root.tooltipText = data.tooltip || ""
@@ -81,6 +97,7 @@ BarWidget {
     } else if (act === "reset") {
       root.isRunning = false
       root.phase = "work"
+      root.secondsLeft = 1500
       root.timeText = "25:00"
       root.iconText = "󰏤"
       root.progressPct = 0
@@ -88,10 +105,12 @@ BarWidget {
       root.isRunning = false
       if (root.phase === "work") {
         root.phase = "break"
+        root.secondsLeft = 300
         root.timeText = "05:00"
         root.iconText = "󰔄"
       } else {
         root.phase = "work"
+        root.secondsLeft = 1500
         root.timeText = "25:00"
         root.iconText = "󰏤"
       }
@@ -109,7 +128,7 @@ BarWidget {
     running: false
     stdout: StdioCollector {
       waitForEnd: true
-      onStreamFinished: text => root.parseOutput(text)
+      onStreamFinished: root.parseOutput(text)
     }
   }
 
@@ -120,20 +139,30 @@ BarWidget {
     running: false
     stdout: StdioCollector {
       waitForEnd: true
-      onStreamFinished: text => root.parseOutput(text)
+      onStreamFinished: root.parseOutput(text)
     }
   }
 
+  // 1-second continuous tick timer for fluid live countdown
   Timer {
-    id: pollTimer
-    interval: root.isRunning || pomodoroMouseArea.containsMouse ? 1000 : 2000
+    id: tickTimer
+    interval: 1000
     running: true
     repeat: true
     triggeredOnStart: true
     onTriggered: {
+      if (root.isRunning) {
+        if (root.secondsLeft > 0) {
+          root.secondsLeft = root.secondsLeft - 1
+          root.timeText = root.formatTime(root.secondsLeft)
+        }
+      }
+
+      // Keep in sync with Python backend state
       if (!statusProc.running && !actionProc.running) {
         statusProc.running = true
       }
+
       if (pomodoroMouseArea.containsMouse && root.bar) {
         root.bar.showTooltip(root, root.tooltipText)
       }
