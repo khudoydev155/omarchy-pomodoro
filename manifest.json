@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "khudoydev.pomodoro",
+  "name": "Pomodoro",
+  "version": "1.0.0",
+  "author": "khudoydev",
+  "license": "MIT",
+  "description": "Minimalist Pomodoro focus timer with audio alerts and session tracking for Omarchy bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Pomodoro",
+    "description": "Focus and break timer",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
