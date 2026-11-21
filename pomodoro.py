@@ -29,7 +29,10 @@ def fmt_duration(sec):
 def play_chime():
     sound_files = [
         "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
-        "/usr/share/sounds/freedesktop/stereo/complete.oga"
+        "/usr/share/sounds/freedesktop/stereo/complete.oga",
+        "/usr/share/sounds/freedesktop/stereo/bell.oga",
+        "/usr/share/sounds/freedesktop/stereo/message.oga",
+        "/usr/share/sounds/freedesktop/stereo/dialog-information.oga"
     ]
     target_sound = None
     for sf in sound_files:
