@@ -1,17 +1,18 @@
-# Omarchy Pomodoro (`khudoydev.pomodoro`)
-
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro)
-[![CI](https://img.shields.io/github/actions/workflow/status/khudoydev155/omarchy-pomodoro/ci.yml?branch=main&label=CI&style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro/actions)
-[![Distros](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20Fedora%20%7C%20Arch-orange.svg?style=for-the-badge)](#-cross-distribution-support)
-[![Platform](https://img.shields.io/badge/platform-Omarchy%20%7C%20Hyprland%20%7C%20Waybar-7aa2f7.svg?style=for-the-badge)](https://github.com/basecamp/omarchy)
-[![Technology](https://img.shields.io/badge/tech-Quickshell%20%E2%80%A2%20QML%20%E2%80%A2%20Python%203-10b981.svg?style=for-the-badge)](#features)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+# 🍅 Omarchy Pomodoro (`khudoydev.pomodoro`)
 
-A production-grade, distraction-free Pomodoro focus timer widget crafted for **[Omarchy Linux](https://github.com/basecamp/omarchy)** (Hyprland + Quickshell) and universally compatible with **Ubuntu, Debian, Fedora, Arch Linux**, and **Waybar**.
+**Production-grade, distraction-free Pomodoro focus timer widget for Linux bars.**
 
-Displays real-time focus sessions, cycle progress dots, and delivers desktop notifications with self-contained audio chimes, presets, and 7-day productivity history.
+[![Release](https://img.shields.io/github/v/tag/khudoydev155/omarchy-pomodoro?label=version&color=3b82f6&style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro/releases)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/khudoydev155/omarchy-pomodoro/ci.yml?branch=main&label=CI&style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro/actions)
+[![Distros](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20Fedora%20%7C%20Arch%20%7C%20openSUSE-ea580c?style=for-the-badge)](#-distribution-install-commands)
+[![Desktop](https://img.shields.io/badge/desktop-Omarchy%20%7C%20Hyprland%20%7C%20Waybar-7aa2f7?style=for-the-badge)](#-bar-configuration)
+[![License: MIT](https://img.shields.io/badge/license-MIT-10b981?style=for-the-badge)](LICENSE)
+
+Designed for **[Omarchy Linux](https://github.com/basecamp/omarchy)** (Hyprland + Quickshell) and universally compatible with **Ubuntu, Debian, Fedora, Arch Linux, openSUSE**, and **Waybar**.
+
+[Quick Install](#-1-line-universal-installation) • [Distro Setup](#-distribution-install-commands) • [Bar Setup](#-bar-configuration) • [CLI Usage](#-terminal--cli-usage) • [Contributing](#-contributing)
 
 </div>
 
@@ -44,74 +45,93 @@ Displays real-time focus sessions, cycle progress dots, and delivers desktop not
 └──────────────────────────────────────────────┘
 ```
 
-### 🖱️ Mouse Controls Cheat Sheet
-
-| Trigger | Action | Behavior |
-| :--- | :--- | :--- |
-| **Left Click** | **Start / Pause** | Toggles countdown timer (25:00 / 50:00 / 15:00) |
-| **Right Click** | **Settings & Stats** | Opens the interactive companion card (presets, sound, 7-day stats) |
-| **Middle Click** | **Reset Timer** | Immediately resets the timer back to starting duration |
-
 ---
 
-## ✨ Features
+## ⚡ 1-Line Universal Installation
 
-- **⚡ Instant Mouse Controls**:
-  - **Left Click**: Start / Pause the current session.
-  - **Right Click**: Opens the interactive **Settings & Presets Card**.
-  - **Middle Click**: Instantly resets the timer back to 25:00.
-- **🎯 3 Focus Modes / Presets**:
-  - **25/5 Classic**: Standard Pomodoro (25m Focus / 5m Break / 15m Long Break).
-  - **50/10 Deep Work**: Extended flow-state sessions for programming and engineering.
-  - **15/3 Quick Sprint**: Rapid sprints for task planning and bug squashing.
-- **🔔 Zero-Dependency Audio Alerts & Mute Toggle**:
-  - Bundled standalone sound assets (`sounds/chime.oga`, `sounds/chime.wav`).
-  - Native fallbacks across PipeWire (`pw-play`), PulseAudio (`paplay`), ALSA (`aplay`), and Freedesktop Canberra (`canberra-gtk-play`).
-  - Interactive **▶ Test** button to test sound immediately.
-- **📊 7-Day Productivity Tracking**:
-  - Keeps local daily and 7-day focus statistics in `~/.local/state/omarchy/pomodoro_history.json`.
-  - Survives reboots and shell restarts.
-- **🎨 100% Theme & Wallpaper Adaptive**:
-  - Dynamically adopts Omarchy theme colors, dark/light modes, transparency, and vertical bars.
-- **🌐 Cross-Distro & Waybar Ready**:
-  - Runs natively on Omarchy/Quickshell, Waybar, or pure Terminal/CLI.
-
----
-
-## 🐧 Cross-Distribution Support
-
-Omarchy Pomodoro is engineered to run seamlessly across all major Linux distributions without runtime errors or missing dependency crashes:
-
-| Distribution Family | Package Manager Command |
-| :--- | :--- |
-| **Ubuntu / Debian / Linux Mint / Pop!_OS** | `sudo apt update && sudo apt install -y python3 libnotify-bin sound-theme-freedesktop` |
-| **Fedora / RHEL / CentOS / Rocky** | `sudo dnf install -y python3 libnotify sound-theme-freedesktop` |
-| **Arch Linux / Omarchy / Manjaro** | `sudo pacman -S --needed python libnotify sound-theme-freedesktop` |
-| **openSUSE / SUSE** | `sudo zypper install -y python3 libnotify-tools sound-theme-freedesktop` |
-
----
-
-## 🚀 One-Line Universal Installation
-
-Run the universal installer in your terminal:
+The fastest way to install on **any Linux distribution** (Arch, Ubuntu, Debian, Fedora, openSUSE):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/khudoydev155/omarchy-pomodoro/main/install.sh | bash
 ```
 
-The script automatically detects your distribution, verifies dependencies, tests the backend, and registers the plugin.
+> The installer automatically detects your distribution, checks dependencies, verifies the backend, and installs the plugin into `~/.config/omarchy/plugins/khudoydev.pomodoro/`.
 
 ---
 
-## 📦 Manual Installation
+## 📦 Distribution Install Commands
 
-### 1. Clone into Plugins Directory
+Copy and paste the exact command for your package manager:
+
+### 🏹 Arch Linux / Omarchy / Manjaro / EndeavourOS
+
+#### Option A: Via Omarchy Plugin Manager
 ```bash
+omarchy plugin add https://github.com/khudoydev155/omarchy-pomodoro.git --enable
+```
+
+#### Option B: Manual Installation (Pacman)
+```bash
+sudo pacman -S --needed python libnotify sound-theme-freedesktop git
 git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
 chmod +x ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py
 ```
 
-### 2. Enable in Omarchy Shell
+---
+
+### 🐧 Ubuntu / Debian / Linux Mint / Pop!_OS
+```bash
+sudo apt update && sudo apt install -y python3 libnotify-bin sound-theme-freedesktop git
+git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
+chmod +x ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py
+```
+
+---
+
+### 🎩 Fedora / RHEL / CentOS / Rocky Linux / AlmaLinux
+```bash
+sudo dnf install -y python3 libnotify sound-theme-freedesktop git
+git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
+chmod +x ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py
+```
+
+---
+
+### 🦎 openSUSE (Tumbleweed / Leap)
+```bash
+sudo zypper install -y python3 libnotify-tools sound-theme-freedesktop git
+git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
+chmod +x ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py
+```
+
+---
+
+### 🏔️ Alpine Linux
+```bash
+sudo apk add python3 libnotify alsa-utils git
+git clone https://github.com/khudoydev155/omarchy-pomodoro.git ~/.config/omarchy/plugins/khudoydev.pomodoro
+chmod +x ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py
+```
+
+---
+
+### ❄️ NixOS / Nix
+Add to your `configuration.nix`:
+```nix
+environment.systemPackages = with pkgs; [
+  python3
+  libnotify
+  sound-theme-freedesktop
+  git
+];
+```
+
+---
+
+## 🧩 Bar Configuration
+
+### 1. Omarchy Shell (Hyprland + Quickshell)
+
 Add `"khudoydev.pomodoro"` to your `~/.config/omarchy/shell.json` inside `"bar.layout.right"`:
 
 ```json
@@ -126,16 +146,16 @@ Add `"khudoydev.pomodoro"` to your `~/.config/omarchy/shell.json` inside `"bar.l
 }
 ```
 
-Reload the shell:
+Reload the shell to activate immediately:
 ```bash
 omarchy restart shell
 ```
 
 ---
 
-## 🧭 Waybar Configuration (Hyprland / Sway)
+### 2. Waybar (Hyprland / Sway on Ubuntu, Debian, Fedora, Arch)
 
-For users running **Waybar** on Ubuntu, Debian, Fedora, or Arch Linux, add this to `~/.config/waybar/config`:
+Add this module block to your `~/.config/waybar/config`:
 
 ```json
 "custom/pomodoro": {
@@ -148,40 +168,78 @@ For users running **Waybar** on Ubuntu, Debian, Fedora, or Arch Linux, add this 
 }
 ```
 
-And style in `~/.config/waybar/style.css`:
+Add this styling to `~/.config/waybar/style.css`:
+
 ```css
 #custom-pomodoro {
     color: #89b4fa;
     padding: 0 10px;
+    font-weight: bold;
 }
 #custom-pomodoro.break {
     color: #a6e3a1;
+}
+#custom-pomodoro.long_break {
+    color: #f9e2af;
 }
 ```
 
 ---
 
+## 🖱️ Mouse Controls Cheat Sheet
+
+| Trigger | Action | Behavior |
+| :--- | :--- | :--- |
+| **Left Click** | **Start / Pause** | Toggles countdown timer (25:00 / 50:00 / 15:00) |
+| **Right Click** | **Settings & Stats** | Opens the interactive companion card (presets, sound, 7-day stats) |
+| **Middle Click** | **Reset Timer** | Immediately resets the timer back to starting duration |
+
+---
+
+## ✨ Features
+
+- **🎯 3 Built-in Focus Modes**:
+  - **`25/5 Classic`**: Standard Pomodoro (25m Focus / 5m Break / 15m Long Break, 4 cycles).
+  - **`50/10 Deep Work`**: Extended flow-state blocks for software engineering and deep writing.
+  - **`15/3 Quick Sprint`**: Rapid sprints for task planning, email triage, and bug squashing.
+- **🔔 Zero-Dependency Audio Chimes**:
+  - Bundled standalone sound assets (`sounds/chime.oga`, `sounds/chime.wav`).
+  - Seamless fallbacks: `canberra-gtk-play` → `pw-play` (PipeWire) → `paplay` (PulseAudio) → `aplay` (ALSA).
+  - Interactive **▶ Test** button to audition the chime instantly.
+- **📊 7-Day Productivity Tracking**:
+  - Automatically records completed focus sessions and total focus time.
+  - Saved locally in `~/.local/state/omarchy/pomodoro_history.json` (survives reboots).
+- **🎨 100% Theme Adaptive**:
+  - Matches Omarchy system colors, dark/light themes, transparency, and vertical bars.
+- **🛡️ Rock-Solid Stability**:
+  - Zero auto-popup interruptions, safe `shutil.which` checks, and full try/except handlers.
+
+---
+
 ## 💻 Terminal / CLI Usage
 
-You can also control the timer directly from any terminal or script:
+You can control and query the timer directly from any terminal or script:
 
 ```bash
-# View terminal status dashboard
+# Display terminal status dashboard
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py cli
 
-# Start or Pause
+# Start or Pause session
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py toggle
 
-# Skip to Break or Work
+# Skip to Break or Work phase
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py skip
 
-# Reset timer
+# Reset timer back to start
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py reset
 
-# Switch mode: 25/5 | 50/10 | 15/3
+# Switch preset: 25/5 | 50/10 | 15/3
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py set_preset 50/10
 
-# Test audio output
+# Toggle audio chime alerts
+python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py toggle_sound
+
+# Test audio chime output
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py test_sound
 ```
 
@@ -193,7 +251,7 @@ python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py test_sound
 omarchy-pomodoro/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions CI workflow (syntax & self-test)
+│       └── ci.yml          # GitHub Actions CI automated validation
 ├── sounds/
 │   ├── chime.oga           # Bundled standalone Ogg audio chime (20 KB)
 │   └── chime.wav           # Bundled standalone WAV fallback for ALSA (47 KB)
@@ -203,11 +261,17 @@ omarchy-pomodoro/
 ├── manifest.json           # Omarchy plugin descriptor
 ├── CONTRIBUTING.md         # Developer contribution guidelines
 ├── LICENSE                 # MIT License
-└── README.md               # Documentation & guides
+└── README.md               # Comprehensive documentation
 ```
+
+---
+
+## 🤝 Contributing
+
+Contributions are warmly welcomed! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on local testing and pull request standards.
 
 ---
 
 ## 📄 License
 
-MIT © [Muhammad Xudayberganov (khudoydev155)](https://github.com/khudoydev155)
+Distributed under the [MIT License](LICENSE). Built with ❤️ by [Muhammad Xudayberganov (khudoydev155)](https://github.com/khudoydev155).
