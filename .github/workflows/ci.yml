@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Validate Python syntax & compilation
+        run: |
+          python3 -m py_compile pomodoro.py
+
+      - name: Validate manifest.json format
+        run: |
+          python3 -m json.tool manifest.json > /dev/null
+
+      - name: Validate install.sh syntax
+        run: |
+          bash -n install.sh
+
+      - name: Test Pomodoro backend CLI actions
+        run: |
+          python3 pomodoro.py status
+          python3 pomodoro.py waybar
+          python3 pomodoro.py cli
+          python3 pomodoro.py toggle
+          python3 pomodoro.py skip
+          python3 pomodoro.py reset
+          python3 pomodoro.py set_preset 50/10
+          python3 pomodoro.py toggle_sound
+
+      - name: Verify sound assets exist
+        run: |
+          test -f sounds/chime.oga
+          test -f sounds/chime.wav

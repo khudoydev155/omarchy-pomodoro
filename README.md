@@ -3,6 +3,7 @@
 <div align="center">
 
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg?style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro)
+[![CI](https://img.shields.io/github/actions/workflow/status/khudoydev155/omarchy-pomodoro/ci.yml?branch=main&label=CI&style=for-the-badge)](https://github.com/khudoydev155/omarchy-pomodoro/actions)
 [![Distros](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20Fedora%20%7C%20Arch-orange.svg?style=for-the-badge)](#-cross-distribution-support)
 [![Platform](https://img.shields.io/badge/platform-Omarchy%20%7C%20Hyprland%20%7C%20Waybar-7aa2f7.svg?style=for-the-badge)](https://github.com/basecamp/omarchy)
 [![Technology](https://img.shields.io/badge/tech-Quickshell%20%E2%80%A2%20QML%20%E2%80%A2%20Python%203-10b981.svg?style=for-the-badge)](#features)
@@ -42,6 +43,14 @@ Displays real-time focus sessions, cycle progress dots, and delivers desktop not
 │ 7 DAYS: 18 sessions (7h 30m)                 │
 └──────────────────────────────────────────────┘
 ```
+
+### 🖱️ Mouse Controls Cheat Sheet
+
+| Trigger | Action | Behavior |
+| :--- | :--- | :--- |
+| **Left Click** | **Start / Pause** | Toggles countdown timer (25:00 / 50:00 / 15:00) |
+| **Right Click** | **Settings & Stats** | Opens the interactive companion card (presets, sound, 7-day stats) |
+| **Middle Click** | **Reset Timer** | Immediately resets the timer back to starting duration |
 
 ---
 
@@ -174,6 +183,27 @@ python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py set_preset 50/1
 
 # Test audio output
 python3 ~/.config/omarchy/plugins/khudoydev.pomodoro/pomodoro.py test_sound
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+omarchy-pomodoro/
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI workflow (syntax & self-test)
+├── sounds/
+│   ├── chime.oga           # Bundled standalone Ogg audio chime (20 KB)
+│   └── chime.wav           # Bundled standalone WAV fallback for ALSA (47 KB)
+├── BarWidget.qml           # Quickshell interactive QML widget & companion card
+├── pomodoro.py             # Python state machine, timers, Waybar & CLI backend
+├── install.sh              # Universal cross-distro auto-installer
+├── manifest.json           # Omarchy plugin descriptor
+├── CONTRIBUTING.md         # Developer contribution guidelines
+├── LICENSE                 # MIT License
+└── README.md               # Documentation & guides
 ```
 
 ---
