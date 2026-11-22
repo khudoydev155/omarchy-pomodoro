@@ -144,29 +144,85 @@ except Exception as e:
         if command -v omarchy >/dev/null 2>&1; then
             omarchy restart shell >/dev/null 2>&1 || true
         fi
-    else
-        echo -e "To activate manually, add ${YELLOW}\"khudoydev.pomodoro\"${NC} to ${BLUE}${SHELL_CONFIG}${NC} inside \"bar.layout.right\":"
-        echo -e '  "right": ['
-        echo -e '    { "id": "khudoydev.pomodoro" }'
-        echo -e '  ]'
-        echo -e "Then run: ${BOLD}${GREEN}omarchy restart shell${NC}"
     fi
+elif command -v gnome-shell >/dev/null 2>&1 || [[ "${XDG_CURRENT_DESKTOP:-}" =~ GNOME ]]; then
+    echo -e "\n${BOLD}${GREEN}GNOME Desktop Detected (Fedora / Ubuntu / Debian)!${NC}"
+    GNOME_EXT_UUID="omarchy-pomodoro@khudoydev.github.com"
+    GNOME_EXT_DIR="${HOME}/.local/share/gnome-shell/extensions/${GNOME_EXT_UUID}"
+    
+    mkdir -p "$GNOME_EXT_DIR"
+    if [ -d "${TARGET_DIR}/gnome-extension" ]; then
+        cp -r "${TARGET_DIR}/gnome-extension/"* "$GNOME_EXT_DIR/"
+        echo -e "${GREEN}✓ Installed GNOME Extension to ${BLUE}${GNOME_EXT_DIR}${NC}"
+    fi
+
+    # Enable the extension via gnome-extensions CLI
+    if command -v gnome-extensions >/dev/null 2>&1; then
+        gnome-extensions enable "$GNOME_EXT_UUID" >/dev/null 2>&1 || true
+    fi
+
+    # Also register in GSettings enabled-extensions
+    if command -v gsettings >/dev/null 2>&1; then
+        python3 -c "
+import subprocess, ast
+uuid = '$GNOME_EXT_UUID'
+try:
+    res = subprocess.check_output(['gsettings', 'get', 'org.gnome.shell', 'enabled-extensions']).decode().strip()
+    clean = res.replace('@as ', '').strip()
+    arr = ast.literal_eval(clean) if (clean.startswith('[') and clean.endswith(']')) else []
+    if uuid not in arr:
+        arr.append(uuid)
+        subprocess.run(['gsettings', 'set', 'org.gnome.shell', 'enabled-extensions', str(arr)], check=True)
+except Exception:
+    pass
+" 2>/dev/null || true
+    fi
+
+    echo -e "${BOLD}${GREEN}✓ GNOME Topbar Extension enabled!${NC}"
+    echo -e "${YELLOW}👉 Note for GNOME users: On Wayland, please Log Out & Log Back In to display the widget on your top bar.${NC}"
+
 elif [ -f "$WAYBAR_CONFIG" ] || command -v waybar >/dev/null 2>&1; then
-    echo -e "\n${BOLD}${BLUE}Waybar Environment Detected (Fedora / Ubuntu / Sway / Hyprland):${NC}"
-    echo "To display the Pomodoro Timer in Waybar, add this module to your ~/.config/waybar/config:"
-    echo '  "custom/pomodoro": {'
-    echo "    \"exec\": \"python3 ${TARGET_DIR}/pomodoro.py waybar\","
-    echo '    "return-type": "json",'
-    echo '    "interval": 1,'
-    echo "    \"on-click\": \"python3 ${TARGET_DIR}/pomodoro.py toggle\","
-    echo "    \"on-click-right\": \"python3 ${TARGET_DIR}/pomodoro.py skip\","
-    echo "    \"on-click-middle\": \"python3 ${TARGET_DIR}/pomodoro.py reset\""
-    echo '  }'
-    echo -e "\nAnd include ${YELLOW}\"custom/pomodoro\"${NC} in your waybar \"modules-right\"."
+    echo -e "\n${BOLD}${BLUE}Waybar Environment Detected (Hyprland / Sway):${NC}"
+    if [ -f "$WAYBAR_CONFIG" ]; then
+        python3 -c "
+import json
+cfg = '$WAYBAR_CONFIG'
+try:
+    with open(cfg, 'r', encoding='utf-8') as f:
+        d = json.load(f)
+    if isinstance(d, dict) and 'custom/pomodoro' not in d:
+        d['custom/pomodoro'] = {
+            'exec': 'python3 ${TARGET_DIR}/pomodoro.py waybar',
+            'return-type': 'json',
+            'interval': 1,
+            'on-click': 'python3 ${TARGET_DIR}/pomodoro.py toggle',
+            'on-click-right': 'python3 ${TARGET_DIR}/pomodoro.py skip',
+            'on-click-middle': 'python3 ${TARGET_DIR}/pomodoro.py reset'
+        }
+        mr = d.setdefault('modules-right', [])
+        if 'custom/pomodoro' not in mr:
+            mr.append('custom/pomodoro')
+        with open(cfg, 'w', encoding='utf-8') as f:
+            json.dump(d, f, indent=2)
+except Exception:
+    pass
+" 2>/dev/null || true
+        pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
+        echo -e "${GREEN}✓ Auto-configured ~/.config/waybar/config and reloaded Waybar.${NC}"
+    else
+        echo "Add this module to your ~/.config/waybar/config:"
+        echo '  "custom/pomodoro": {'
+        echo "    \"exec\": \"python3 ${TARGET_DIR}/pomodoro.py waybar\","
+        echo '    "return-type": "json",'
+        echo '    "interval": 1,'
+        echo "    \"on-click\": \"python3 ${TARGET_DIR}/pomodoro.py toggle\","
+        echo "    \"on-click-right\": \"python3 ${TARGET_DIR}/pomodoro.py skip\","
+        echo "    \"on-click-middle\": \"python3 ${TARGET_DIR}/pomodoro.py reset\""
+        echo '  }'
+    fi
 else
-    echo -e "\n${BOLD}${YELLOW}Standard Desktop Environment Detected (${DISTRO_NAME} / GNOME / KDE):${NC}"
-    echo "• Note: Omarchy bar widgets are designed for Omarchy Shell (Quickshell) and Waybar."
-    echo "• In GNOME/KDE, you can control the Pomodoro timer directly in your terminal:"
+    echo -e "\n${BOLD}${YELLOW}Terminal Mode:${NC}"
+    echo "• You can control the Pomodoro timer directly in your terminal:"
     echo -e "    ${BOLD}${GREEN}python3 ${TARGET_DIR}/pomodoro.py toggle${NC}   # Start / Pause"
     echo -e "    ${BOLD}${GREEN}python3 ${TARGET_DIR}/pomodoro.py status${NC}   # Check status"
 fi

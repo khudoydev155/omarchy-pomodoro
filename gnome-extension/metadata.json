@@ -1,0 +1,13 @@
+{
+  "name": "Omarchy Pomodoro",
+  "description": "Distraction-free Pomodoro focus timer widget for GNOME top bar",
+  "uuid": "omarchy-pomodoro@khudoydev.github.com",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48"
+  ],
+  "url": "https://github.com/khudoydev155/omarchy-pomodoro",
+  "version": 1
+}
