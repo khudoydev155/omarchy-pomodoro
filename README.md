@@ -160,15 +160,16 @@ omarchy restart shell
 
 ### 2. GNOME Shell (Fedora, Ubuntu, Debian, Pop!_OS)
 
-Our 1-line installer automatically installs and enables the GNOME extension. To manually install it:
+Our 1-line installer automatically installs and configures the native GNOME Topbar Extension.
 
+To activate immediately or enable after first login on Fedora GNOME:
 ```bash
-mkdir -p ~/.local/share/gnome-shell/extensions/omarchy-pomodoro@khudoydev.github.com
-cp -r ~/.config/omarchy/plugins/khudoydev.pomodoro/gnome-extension/* ~/.local/share/gnome-shell/extensions/omarchy-pomodoro@khudoydev.github.com/
+gsettings set org.gnome.shell disable-user-extensions false
 gnome-extensions enable omarchy-pomodoro@khudoydev.github.com
 ```
 
-> 💡 **Note**: On Wayland, log out and log back into your user session to display it on your GNOME top bar.
+> 💡 **Tip**: If just installed on Wayland, log out and log back in, then run the enable command above. Check status anytime with:
+> `gnome-extensions info omarchy-pomodoro@khudoydev.github.com`
 
 ---
 
