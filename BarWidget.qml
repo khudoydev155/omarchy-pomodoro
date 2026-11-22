@@ -155,7 +155,7 @@ BarWidget {
     }
 
     // Execute Python action immediately
-    var cmd = ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), act]
+    var cmd = ["python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), act]
     if (arg) cmd.push(arg)
 
     actionProc.running = false
@@ -176,7 +176,7 @@ BarWidget {
   // Dedicated process for background status polling
   Process {
     id: statusProc
-    command: ["/usr/bin/python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), "status"]
+    command: ["python3", Qt.resolvedUrl("pomodoro.py").toString().replace("file://", ""), "status"]
     running: false
     stdout: StdioCollector {
       waitForEnd: true

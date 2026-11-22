@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, os, json, time, subprocess, datetime
+import sys, os, json, time, subprocess, datetime, shutil
 from datetime import date
 
 PRESETS = {
@@ -68,32 +68,84 @@ def play_chime(sound_enabled=True):
     if not sound_enabled:
         return
 
-    sound_files = [
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    bundled_oga = os.path.join(script_dir, "sounds", "chime.oga")
+    bundled_wav = os.path.join(script_dir, "sounds", "chime.wav")
+
+    # Priority 1: Canberra system sound event (Freedesktop standard on Ubuntu, Debian, Fedora, GNOME)
+    if shutil.which("canberra-gtk-play"):
+        try:
+            subprocess.Popen(
+                ["canberra-gtk-play", "-i", "complete"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return
+        except Exception:
+            pass
+
+    # Priority 2: Candidates across Ubuntu, Debian, Fedora, Arch, openSUSE
+    oga_candidates = []
+    if os.path.exists(bundled_oga):
+        oga_candidates.append(bundled_oga)
+    for sf in [
         "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
         "/usr/share/sounds/freedesktop/stereo/complete.oga",
         "/usr/share/sounds/freedesktop/stereo/bell.oga",
         "/usr/share/sounds/freedesktop/stereo/message.oga",
-        "/usr/share/sounds/freedesktop/stereo/dialog-information.oga"
-    ]
-    target_sound = None
-    for sf in sound_files:
+        "/usr/share/sounds/freedesktop/stereo/dialog-information.oga",
+        "/usr/share/sounds/Yaru/stereo/complete.oga",
+        "/usr/share/sounds/Yaru/stereo/bell.oga",
+        "/usr/share/sounds/ubuntu/stereo/bell.ogg",
+        "/usr/share/sounds/gnome/default/alerts/glass.ogg",
+        "/usr/share/sounds/fedora/stereo/complete.oga"
+    ]:
         if os.path.exists(sf):
-            target_sound = sf
-            break
-    if not target_sound:
-        return
+            oga_candidates.append(sf)
 
-    for player in ["pw-play", "paplay", "aplay"]:
+    # Try modern audio daemons (PipeWire / PulseAudio / mpv)
+    for player in ["pw-play", "paplay", "mpv", "ffplay"]:
+        if shutil.which(player) and oga_candidates:
+            try:
+                cmd = [player]
+                if player == "mpv":
+                    cmd += ["--no-terminal", "--really-quiet"]
+                elif player == "ffplay":
+                    cmd += ["-nodisp", "-autoexit", "-loglevel", "quiet"]
+                cmd.append(oga_candidates[0])
+                subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return
+            except Exception:
+                continue
+
+    # Priority 3: ALSA aplay fallback (works on minimal Ubuntu, Debian, Fedora without sound servers)
+    wav_candidates = []
+    if os.path.exists(bundled_wav):
+        wav_candidates.append(bundled_wav)
+    for wf in [
+        "/usr/share/sounds/alsa/Front_Center.wav",
+        "/usr/share/sounds/alsa/Noise.wav"
+    ]:
+        if os.path.exists(wf):
+            wav_candidates.append(wf)
+
+    if shutil.which("aplay") and wav_candidates:
         try:
-            subprocess.Popen([player, target_sound], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            break
+            subprocess.Popen(
+                ["aplay", "-q", wav_candidates[0]],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return
         except Exception:
-            continue
+            pass
 
 def send_notification(title, message):
+    if not shutil.which("notify-send"):
+        return
     try:
         subprocess.Popen(
-            ["notify-send", title, message, "-i", "alarm-symbolic", "-u", "normal"],
+            ["notify-send", title, message, "-i", "alarm-symbolic", "-u", "normal", "-a", "Pomodoro"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
@@ -345,9 +397,46 @@ def get_status_payload(state):
         "tooltip": "\n".join(tooltip_lines)
     }
 
+def print_cli_dashboard(payload):
+    print("┌──────────────────────────────────────────────┐")
+    print(f"│ 󰄉 Pomodoro Focus Timer v1.2.0 (Cross-Distro) │")
+    print("├──────────────────────────────────────────────┤")
+    print(f"│ Mode:    {payload['preset_name']} ({payload['preset']})")
+    print(f"│ Status:  {payload['phase_label']} - {payload['time_str']} ({'Running' if payload['running'] else 'Paused'})")
+    print(f"│ Cycles:  {payload['dots']} ({payload['pct']}%)")
+    print(f"│ Sound:   {'🔔 Enabled' if payload['sound_enabled'] else '🔕 Muted'}")
+    print(f"│ Today:   {payload['completed_today']} sessions ({payload['focus_time_str']})")
+    print(f"│ 7 Days:  {payload['week_completed']} sessions ({payload['week_focus_str']})")
+    print("├──────────────────────────────────────────────┤")
+    print("│ Commands:")
+    print("│   pomodoro.py toggle        Start / Pause session")
+    print("│   pomodoro.py skip          Skip between work/break")
+    print("│   pomodoro.py reset         Reset current timer")
+    print("│   pomodoro.py set_preset P  Choose: 25/5 | 50/10 | 15/3")
+    print("│   pomodoro.py toggle_sound  Mute or unmute chimes")
+    print("│   pomodoro.py test_sound    Test audio chime output")
+    print("│   pomodoro.py waybar        Output for Waybar module")
+    print("└──────────────────────────────────────────────┘")
+
 def main():
     state = load_state()
     action = sys.argv[1] if len(sys.argv) > 1 else "status"
+
+    if action == "waybar":
+        payload = get_status_payload(state)
+        waybar_payload = {
+            "text": f"{payload['icon']} {payload['time_str']}",
+            "alt": payload["time_str"],
+            "tooltip": payload["tooltip"],
+            "class": payload["phase"],
+            "percentage": payload["pct"]
+        }
+        print(json.dumps(waybar_payload))
+        return
+    elif action in ["cli", "tui", "--help", "-h"]:
+        payload = get_status_payload(state)
+        print_cli_dashboard(payload)
+        return
 
     if action == "toggle":
         handle_toggle(state)
