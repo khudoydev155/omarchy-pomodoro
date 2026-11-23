@@ -85,8 +85,15 @@ export default class OmarchyPomodoroExtension extends Extension {
                     if (res && out && out.length > 0) {
                         let jsonStr = new TextDecoder().decode(out).trim();
                         let data = JSON.parse(jsonStr);
-                        if (data && data.text) {
-                            this._label.set_text(data.text);
+                        if (data) {
+                            let icon = '🍅';
+                            if (data.class === 'short_break') {
+                                icon = '☕';
+                            } else if (data.class === 'long_break') {
+                                icon = '🌿';
+                            }
+                            let timeStr = data.alt || (data.text ? data.text.replace(/^[^\d]*/, '').trim() : '25:00');
+                            this._label.set_text(`${icon} ${timeStr}`);
                         }
                     }
                 } catch (e) {
